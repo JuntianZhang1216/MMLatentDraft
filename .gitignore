@@ -117,7 +117,7 @@ scripts/generate_erqa_latent_cot.py
 scripts/generate_vsibench_latent_cot.py
 start_generate_erqa_latent.sh
 start_generate_vsibench_latent.sh
-scripts/v3/ichat_client.py
+scripts/v3/
 scripts/v5/action_space.py
 scripts/v5/generate_v5.py
 scripts/v5/prompts/generator_v5.txt

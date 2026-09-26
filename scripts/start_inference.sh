@@ -4,10 +4,10 @@
 #
 # 用法:
 #   # 单图问答
-#   bash start_inference.sh --image /path/to/image.jpg --question "What is shown?"
+#   bash scripts/start_inference.sh --model_path /path/to/model --checkpoint /path/to/checkpoint --image /path/to/image.jpg --question "What is shown?"
 #
 #   # 批量
-#   bash start_inference.sh --batch_file /path/to/queries.json --output_file results.json
+#   bash scripts/start_inference.sh --model_path /path/to/model --checkpoint /path/to/checkpoint --batch_file /path/to/queries.json --output_file results.json
 # ============================================================
 
 set -e
@@ -55,7 +55,7 @@ echo "  额外参数:     ${EXTRA_ARGS[*]}"
 echo "============================================================"
 echo ""
 
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0} $PYTHON "${SCRIPT_DIR}/scripts/inference.py" \
+CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0} $PYTHON "${SCRIPT_DIR}/inference.py" \
     --model_path "${MODEL_PATH}" \
     --nld_checkpoint "${NLD_CHECKPOINT}" \
     --device "${DEVICE}" \

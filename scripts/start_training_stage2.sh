@@ -9,9 +9,9 @@
 #    running, OR pass --config /path/to/your.yaml.
 #
 #  Usage:
-#    bash start_training.sh
-#    bash start_training.sh --gpus 4
-#    bash start_training.sh --config /path/to/your.yaml
+#    bash scripts/start_training_stage2.sh
+#    bash scripts/start_training_stage2.sh --gpus 4
+#    bash scripts/start_training_stage2.sh --config /path/to/your.yaml
 # ============================================================
 
 set -e
@@ -25,12 +25,13 @@ export TOKENIZERS_PARALLELISM=false
 
 # ======================== Step 2: Paths ========================
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG="${SCRIPT_DIR}/configs/nld_train.yaml"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+CONFIG="${PROJECT_DIR}/configs/nld_train.yaml"
 NUM_GPUS=8
 MASTER_PORT=${MASTER_PORT:-29505}
 
 # ======================== Step 3: Args ========================
-EXTRA_ARGS=""
+EXTRA_ARGS=()
 while [[ $# -gt 0 ]]; do
     case $1 in
         --config)
@@ -42,7 +43,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         *)
-            EXTRA_ARGS="${EXTRA_ARGS} $1"
+            EXTRA_ARGS+=("$1")
             shift
             ;;
     esac
@@ -64,17 +65,17 @@ if [ ! -f "${CONFIG}" ]; then
 fi
 
 # Output dir
-OUTPUT_DIR=$(python3 -c "import yaml; print(yaml.safe_load(open('${CONFIG}'))['training']['output_dir'])")
+OUTPUT_DIR=$(python3 -c 'import sys, yaml; print(yaml.safe_load(open(sys.argv[1]))["training"]["output_dir"])' "${CONFIG}")
 mkdir -p "${OUTPUT_DIR}"
-mkdir -p "${SCRIPT_DIR}/logs"
+mkdir -p "${PROJECT_DIR}/logs"
 
 # ======================== Step 5: Launch ========================
 torchrun \
     --nproc_per_node=${NUM_GPUS} \
     --master_port=${MASTER_PORT} \
-    scripts/train_nld.py \
+    "${SCRIPT_DIR}/train_nld.py" \
     --config "${CONFIG}" \
-    ${EXTRA_ARGS}
+    "${EXTRA_ARGS[@]}"
 
 echo ""
 echo "============================================================"

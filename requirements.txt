@@ -14,10 +14,10 @@ pandas>=2.0.0
 # Qwen3-VL 相关
 qwen-vl-utils>=0.0.8
 
-# 预生成推理链加速 (scripts/pregenerate_think.py)
+# 推理加速
 vllm>=0.6.0
 
-# iChat API 网关 (Stage 2 错误定位, 通过公司内部网关调用 Gemini)
+# HTTP 客户端
 requests>=2.28.0
 
 # 配置

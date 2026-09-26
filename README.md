@@ -200,9 +200,19 @@ hits the generation limit, lacks `Final Answer:`, or triggers the repetition
 check. These defaults should be accounted for when comparing evaluation
 results. The CLI does not expose every model or generation setting.
 
-Use the direct Python and `torchrun` commands above: the bundled inference
-launcher and the default Stage 2 launcher configuration path contain directory
-assumptions that do not match this repository layout.
+Alternatively, run the shell launchers from the repository root:
+
+```bash
+bash scripts/start_inference.sh \
+  --model_path /path/to/Qwen3-VL-8B-Instruct \
+  --checkpoint /path/to/training_output/model \
+  --image /path/to/image.jpg \
+  --question "What is shown in this image?"
+
+bash scripts/start_training_stage2.sh \
+  --config configs/local_train.yaml \
+  --gpus 8
+```
 
 ## Analysis tools
 
