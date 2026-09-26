@@ -1,171 +1,222 @@
-# MMLatentDraft
+# Interlude
 
-**Native Latent Draft for Multimodal Reasoning**
+**Interlude: Reasoning Between Tokens in Vision-Language Models**
 
-> Native Latent Draft (NLD) — multi-step reasoning *inside the native hidden
-> space* of a Vision-Language Model. No external draft module, no auxiliary
-> decoder; the same Transformer that does autoregressive generation also does
-> latent thinking, by re-feeding its own last-layer hidden state through itself
-> as an RNN cell.
+Anonymous code release accompanying the paper.
 
-<p align="center">
-  <a href="#-method"><b>Method</b></a> ·
-  <a href="#-repository-layout"><b>Repository Layout</b></a> ·
-  <a href="#-installation"><b>Installation</b></a> ·
-  <a href="#-inference"><b>Inference</b></a> ·
-  <a href="#-special-tokens"><b>Special Tokens</b></a>
-</p>
+Interlude interleaves natural-language reasoning with short latent segments.
+Within each segment, the vision-language model recurrently processes its own
+hidden states without decoding intermediate words, then resumes text generation.
+Training combines stage-wise semantic guidance through the language head with
+a geometric margin objective that favors an intermediate visual–textual
+reference over either modality alone.
 
----
+The released implementation uses **Qwen3-VL-8B-Instruct**. Internal names such
+as `NLDModel`, `NativeLatentThinker`, `rld`, and `nld` are retained in the code
+and configuration for compatibility.
 
-## ✨ Method
+## Release contents
 
-NLD inserts *latent thinking steps* at stage boundaries between the question
-and the final answer. Each latent step uses the last-layer hidden state of the
-previous token as a "query probe", runs it through **all** Transformer layers
-(with KV cache for prefix), and feeds the new hidden state back as the next
-input embedding — turning the Transformer into an RNN cell.
+This repository includes the model implementation, training and inference
+entry points, a training configuration template, and selected analysis tools.
+Training data, images, model checkpoints, analysis inputs, and a complete
+benchmark evaluation pipeline are not included. Running the examples requires
+supplying the corresponding model and data files.
 
-```
- Input  →  [Q segment]  →  <|latent|>  →  h_1 → h_2 → … → h_N  →  <|/latent|>  →  [A segment]  →  Answer
-                                  ↑              ↻              ↓
-                            step_embedding   text_model        thought
-                                            (all layers,        out
-                                             with KV cache)
-```
-
-**Equivalence to COCONUT.** Both treat the LM as an RNN cell that recurses on
-its own hidden state without decoding text in between. NLD differs only in
-that the recurrence is performed by the *native* text-model stack (no
-external projector), making the method a pure inductive bias on top of the
-base VLM.
-
-**Key designs.**
-
-- **Single-token recurrence.** Each step only feeds the *last* token's hidden
-  state as the query; all history lives in the KV cache.
-- **Dual reasoning streams.** Implicit reasoning (hidden space) and explicit
-  reasoning (natural-language CoT segments) form a single unified sequence.
-- **Adaptive exit.** A latent step can exit either by predicting the
-  `<|/latent|>` exit token *or* by a saturation signal on the hidden state
-  (double safeguard).
-
----
-
-## 📁 Repository Layout
-
-```
-MMLatentDraft/
-├── rld/                              # Core NLD module
-│   ├── model_v2.py                   #   NLDModelForVL — main model, segment-wise forward
-│   ├── latent_thinker.py             #   NativeLatentThinker — recurrent latent step
-│   ├── data.py                       #   Dataset + collator (multi-image, mixed modalities)
-│   ├── trainer_nld.py                #   Custom Trainer
-│   ├── inference_utils.py            #   Greedy / beam / visualisation helpers
-│   ├── visual_anchor.py              #   Transition-modality (slerp) anchor utilities
-│   └── __init__.py
-│
-├── configs/                          # Run configs (yaml)
-├── scripts/                          # Standalone scripts
-│   ├── train_nld.py                  #   Training entry (torchrun + FSDP)
-│   ├── run_train_nld.sh              #   Generic training launcher
-│   └── inference.py                  #   Single-sample / batch inference
-│
-├── analyze_efficiency.py             # FLOPs / latency comparison vs CoT baseline
-├── analyze_entropy_trigger.py        # Entropy at latent-trigger positions
-├── plot_efficiency.py                # Efficiency figures
-│
-├── modality_analysis/                # Hidden-state geometry analysis
-├── modality_manifold_analysis/       # Modality-manifold analysis (CKA / t-SNE / cone evolution)
-├── paper_tables_figures/             # LaTeX tables / generation scripts
-│
-├── start_training.sh                          # Training launcher (8-GPU FSDP)
-├── start_inference.sh                         # Inference launcher
-├── run_efficiency_analysis.sh
-├── run_entropy_analysis.sh
-│
+```text
+.
+├── rld/
+│   ├── __init__.py
+│   ├── model_v2.py                         # Model and latent/text execution
+│   ├── latent_thinker.py                   # Recurrent latent computation
+│   ├── visual_anchor.py                    # Visual–textual reference utilities
+│   ├── data.py                             # Dataset and collator
+│   ├── trainer_nld.py                      # Custom training loop support
+│   └── inference_utils.py                  # Generation and fallback helpers
+├── scripts/
+│   ├── train_nld.py                        # Training entry point
+│   ├── inference.py                        # Single-image and batch inference
+│   ├── start_training_stage1.sh
+│   ├── start_training_stage2.sh
+│   └── start_inference.sh
+├── configs/
+│   ├── nld_train.yaml                      # Stage 2 configuration template
+│   └── fsdp_config.json
+├── utils/
+│   ├── analyze_efficiency.py
+│   ├── analyze_latent_distribution.py
+│   ├── visualize_modality_manifold.py
+│   └── orthogonal_decomposition_analysis.py
 ├── requirements.txt
 ├── .gitignore
 └── README.md
 ```
 
-> Heavy artefacts (`data/`, `outputs/`, model weights, paper figures, logs)
-> are excluded from the repository via `.gitignore`. Only the code path is
-> tracked.
+## Installation
 
----
+Download and extract the anonymous repository archive, then run all commands
+below from its root directory.
 
-## 🛠 Installation
-
-### Requirements
-
-- Python ≥ 3.10
-- PyTorch ≥ 2.1 with CUDA 12.x
-- Flash-Attention 2
-
-### Setup
+Use a CUDA environment with a compatible PyTorch and FlashAttention 2
+installation. The dependency file pins `transformers==5.3.0`; its other
+version constraints are not a fully locked or independently validated
+environment specification.
 
 ```bash
-git clone https://github.com/Icarus1216/MMLatentDraft.git
-cd MMLatentDraft
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-### Base model
-
-NLD is built on top of **Qwen3-VL-8B-Instruct**. Download the weights once and
-export the path as `MODEL_PATH`:
+The plotting utilities additionally require Matplotlib:
 
 ```bash
-export MODEL_PATH=/path/to/Qwen3-VL-8B-Instruct
+python -m pip install matplotlib
 ```
 
-The provided `start_*.sh` scripts and `configs/*.yaml` use the placeholder
-`<PATH_TO_QWEN3_VL_8B_INSTRUCT>`. Either set the env var above (the launchers
-honour it) or replace the placeholder in your local config.
+Obtain the Qwen3-VL-8B-Instruct model and processor files separately. Pass
+their local directory explicitly in the configuration or inference command.
 
----
+## Training data
 
-## 🚀 Inference
+The training loader reads a JSON array. Each record contains image paths,
+a question, an answer, and `reasoning_for_training`. The following is an
+illustrative schema example, not a released training sample:
+
+```json
+[
+  {
+    "image": "images/example.jpg",
+    "question": "Which object is closer to the camera?",
+    "answer": "The red cube.",
+    "reasoning_for_training": "I compare the objects' depth cues. <|latent|><|/latent|> The red cube appears closer.",
+    "latent_key_tokens": [
+      [
+        {"tokens": ["depth", "occlusion"], "role": "concrete"},
+        {"tokens": ["relative distance"], "role": "bridge"}
+      ]
+    ]
+  }
+]
+```
+
+- `image` or `image_path` specifies a single image; `image_paths` accepts a
+  list for multi-image training samples. Relative paths are resolved against
+  `data.image_base_dir`.
+- `reasoning_for_training` contains the explicit trace and latent boundaries.
+  The loader appends the `Final Answer:` section from `answer`.
+- `latent_key_tokens` has the structure `[boundary][stage]`. Its outer list
+  must align with the `<|latent|>` occurrences in the reasoning trace. Each
+  inner list determines that boundary's number of latent training steps.
+- Each stage provides concept strings in `tokens` and a `role`:
+  `abstract`, `bridge`, `unified`, or `concrete`.
+
+The loader also accepts legacy `<|pause|>` markers and converts them during
+preprocessing. Annotation-generation scripts are not part of this release.
+
+## Training
+
+Copy the supplied template before editing it:
 
 ```bash
-bash start_inference.sh \
-    --checkpoint /path/to/checkpoint \
-    --image path/to/image.jpg \
-    --question "Your question here?"
+cp configs/nld_train.yaml configs/local_train.yaml
 ```
 
-For analysis utilities (efficiency / entropy / hidden-state geometry),
-see the analysis launchers (`run_efficiency_analysis.sh`,
-`run_entropy_analysis.sh`) and the `modality_analysis/` /
-`modality_manifold_analysis/` script directories.
+Set the following fields in `configs/local_train.yaml`:
 
----
+| Field | Value to provide |
+| --- | --- |
+| `model.model_path` | Local Qwen3-VL-8B-Instruct directory |
+| `data.train_json` | Training JSON file |
+| `data.image_base_dir` | Base directory for relative image paths |
+| `nld.resume_from_model_only` | Compatible previous-stage checkpoint directory, or `null` to initialize from the base model |
+| `training.output_dir` | Directory for checkpoints and logs |
 
-## 🔖 Special Tokens
+For model-only initialization, the previous-stage directory must contain
+compatible `.safetensors` model weights. Verify that it exists: the entry
+point can skip loading when the supplied path does not exist.
 
-| Token         | Purpose                                                |
-| :------------ | :----------------------------------------------------- |
-| `<|latent|>`  | Enter hidden-space reasoning mode.                     |
-| `<|/latent|>` | Exit hidden-space reasoning mode.                      |
-| `<|pause|>`   | Stage boundary in raw data; rewritten at preprocessing.|
+Launch distributed training, adjusting GPU selection and process count to
+your hardware:
 
----
-
-## 📜 License
-
-MIT.
-
-## 📚 Citation
-
-If you find this work useful, please cite the upcoming paper. Citation entry
-will be added once the preprint is public.
-
-```bibtex
-@misc{mmlatentdraft,
-  title  = {MMLatentDraft: Native Latent Draft for Multimodal Reasoning},
-  author = {Anonymous},
-  year   = {2026},
-  note   = {Code: https://github.com/Icarus1216/MMLatentDraft}
-}
+```bash
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
+torchrun --standalone --nproc_per_node=8 scripts/train_nld.py \
+  --config configs/local_train.yaml
 ```
+
+The template enables FSDP and bfloat16. GPU memory requirements depend on image
+resolution, sequence length, and batch settings. Final model export is written
+to `<training.output_dir>/model`.
+
+To resume a compatible Trainer checkpoint, append
+`--resume_from_checkpoint /path/to/checkpoint` to the training command.
+Clear `nld.resume_from_model_only` when using this mode to avoid a separate
+model-only initialization.
+
+The repository contains two stage-named shell launchers, but only one Stage 2
+YAML template. The launcher name does not select a training stage; stage
+behavior depends on the supplied data and configuration. A separate,
+paper-matched Stage 1 recipe is not included.
+
+## Inference
+
+Use the Python entry point with both the base model and a trained Interlude
+checkpoint:
+
+```bash
+python scripts/inference.py \
+  --model_path /path/to/Qwen3-VL-8B-Instruct \
+  --nld_checkpoint /path/to/training_output/model \
+  --image /path/to/image.jpg \
+  --question "What is shown in this image?" \
+  --max_new_tokens 512 \
+  --temperature 0.7 \
+  --device cuda
+```
+
+For batch inference, create a JSON array such as:
+
+```json
+[
+  {
+    "image": "/path/to/image.jpg",
+    "question": "What is shown in this image?"
+  }
+]
+```
+
+Then run:
+
+```bash
+python scripts/inference.py \
+  --model_path /path/to/Qwen3-VL-8B-Instruct \
+  --nld_checkpoint /path/to/training_output/model \
+  --batch_file /path/to/queries.json \
+  --output_file results.json
+```
+
+The batch entry point processes one image per query. Its default generation
+uses sampling and enables a second, direct-answer attempt if the first output
+hits the generation limit, lacks `Final Answer:`, or triggers the repetition
+check. These defaults should be accounted for when comparing evaluation
+results. The CLI does not expose every model or generation setting.
+
+Use the direct Python and `torchrun` commands above: the bundled inference
+launcher and the default Stage 2 launcher configuration path contain directory
+assumptions that do not match this repository layout.
+
+## Analysis tools
+
+The scripts under `utils/` cover efficiency measurements, latent-distribution
+plots, modality diagnostics, and orthogonal-decomposition analysis. Inspect
+each script's arguments and expected input format before running it; their
+required checkpoints, logs, or intermediate results must be supplied
+separately. These tools do not constitute a complete reproduction pipeline
+for every paper table or figure.
+
+## Special tokens
+
+| Token | Purpose |
+| --- | --- |
+| `<|latent|>` | Begin a latent reasoning segment |
+| `<|/latent|>` | End a latent reasoning segment |
+| `<|pause|>` | Legacy data marker converted during preprocessing |
