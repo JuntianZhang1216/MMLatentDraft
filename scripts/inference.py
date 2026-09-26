@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-NLD 推理脚本 (Native Latent Draft)
+NLD 推理脚本 (Interlude)
 
 使用方法:
     # 单张图像问答
@@ -105,10 +105,10 @@ class NLDInference:
         temperature: float = 0.7,
         top_p: float = 0.9,
         do_sample: bool = True,
-        # ---- LatentDraft 默认推理时行为: 病态 fallback (默认开启) ----
+        # ---- Interlude 默认推理时行为: 病态 fallback (默认开启) ----
         # 一旦第一次推理命中 hit_max / 没有 'Final Answer:' / 重复 ngram,
         # 就用 directly-answer prompt + 强制 'Final Answer: ' 前缀重跑一次,
-        # 这是 LatentDraft 推理时的 *默认* 兜底逻辑.
+        # 这是 Interlude 推理时的 *默认* 兜底逻辑.
         enable_fallback: bool = True,
         fallback_max_new_tokens: int = 32,
         return_meta: bool = False,
@@ -144,7 +144,7 @@ class NLDInference:
             {"type": "text", "text": question},
         ]})
 
-        # 统一推理 + 兜底入口 (LatentDraft 默认行为)
+        # 统一推理 + 兜底入口 (Interlude 默认行为)
         from rld.inference_utils import (
             infer_with_latent_fallback,
             split_reasoning_and_answer,

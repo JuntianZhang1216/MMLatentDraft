@@ -1,4 +1,4 @@
-# NLD (Native Latent Draft) 依赖
+# Interlude 依赖
 
 torch>=2.1.0
 transformers==5.3.0

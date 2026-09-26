@@ -3,12 +3,12 @@
 """
 analyze_latent_distribution.py
 =============================
-统计 LatentDraft v6 训练数据集中每个样本触发 latent 的次数分布，
+统计 Interlude 训练数据集中每个样本触发 latent 的次数分布，
 并可视化为百分比饼图。
 
 用法:
-    python scripts/analyze_latent_distribution.py \
-        --input ./data/v6/v6_b1b2b3_merged_training_slim_vsp_fixed.json \
+    python utils/analyze_latent_distribution.py \
+        --input /path/to/training_data.json \
         --output ./paper_tables_figures/latent_trigger_distribution.pdf
 """
 
@@ -213,7 +213,7 @@ def plot_2d_pie_chart(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="统计 LatentDraft 训练数据集中 latent 触发次数分布并生成 3D 饼图"
+        description="统计 Interlude 训练数据集中 latent 触发次数分布并生成 3D 饼图"
     )
     parser.add_argument(
         "--input",

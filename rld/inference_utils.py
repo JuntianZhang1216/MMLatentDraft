@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""LatentDraft 默认推理时入口: ``infer_with_latent_fallback``.
+"""Interlude 默认推理时入口: ``infer_with_latent_fallback``.
 
 设计目标
 ========
 把 "一旦命中 hit_max / 病态重复 / 没有 Final Answer 等失败模式, 立即换一个
-'directly answer' 的 prompt 重跑一次" 做成 LatentDraft **默认的推理时行为**.
+'directly answer' 的 prompt 重跑一次" 做成 Interlude **默认的推理时行为**.
 所有 inference / eval 脚本只要从原本的::
 
     generated_ids = model.generate(..., max_new_tokens=N)
@@ -241,7 +241,7 @@ def infer_with_latent_fallback(
     device: Optional[torch.device] = None,
     verbose: bool = False,
 ) -> Dict[str, Any]:
-    """LatentDraft 默认推理函数 (含 directly-answer fallback).
+    """Interlude 默认推理函数 (含 directly-answer fallback).
 
     Parameters
     ----------

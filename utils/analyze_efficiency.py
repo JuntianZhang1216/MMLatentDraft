@@ -4,7 +4,7 @@ FLOPs & Latency 效率分析脚本
 对比三个模型配置:
   1. Qwen3-VL-8B-Instruct          (带 CoT 要求的基座)
   2. Qwen3-VL-8B-Thinking           (原生 Thinking 模型)
-  3. LatentDraft (Ours)             (latent reasoning + CoT)
+  3. Interlude (Ours)             (latent reasoning + CoT)
 
 输出:
   - outputs/efficiency_analysis/
@@ -456,7 +456,7 @@ def plot_efficiency_comparison(summary, output_dir):
     matplotlib.rcParams['axes.labelsize'] = 11
 
     # === 颜色方案 (与 modality_manifold_analysis 和谐一致) ===
-    # 深蓝 (Instruct) → 青色/蓝 (Thinking) → 紫色 (LatentDraft)
+    # 深蓝 (Instruct) → 青色/蓝 (Thinking) → 紫色 (Interlude)
     # 参考配色：蓝色 #2196F3, 紫色 #9C27B0
     # 使用更专业、柔和且区分度高的颜色
     color_inst  = '#78B3CE'   # 柔和蓝 (Instruct)
@@ -467,7 +467,7 @@ def plot_efficiency_comparison(summary, output_dir):
     grid_color  = '#E0E0E0'
 
     # 准备数据
-    configs = ["Qwen3-VL\nInstruct", "Qwen3-VL\nThinking", "LatentDraft\n(Ours)"]
+    configs = ["Qwen3-VL\nInstruct", "Qwen3-VL\nThinking", "Interlude\n(Ours)"]
     colors  = [color_inst, color_think, color_ours]
 
     flops_data = [
@@ -546,7 +546,7 @@ def plot_efficiency_comparison(summary, output_dir):
                     label, ha='center', va='bottom', fontsize=9.5, color=text_color, fontweight='bold')
 
     # 整体标题
-    fig.suptitle("Efficiency Comparison: Qwen3-VL-8B vs LatentDraft", fontsize=13, fontweight='bold', color=text_color, y=1.01)
+    fig.suptitle("Efficiency Comparison: Qwen3-VL-8B vs Interlude", fontsize=13, fontweight='bold', color=text_color, y=1.01)
 
     plt.tight_layout()
     output_path = os.path.join(output_dir, "efficiency_comparison.png")
@@ -564,7 +564,7 @@ def main():
                         default="<PATH_TO_QWEN3_VL_8B_INSTRUCT>",
                         help="Qwen3-VL-8B-Instruct 基座模型路径")
     parser.add_argument("--checkpoint", type=str, default=None, required=True,
-                        help="LatentDraft checkpoint 路径 (必须)")
+                        help="Interlude checkpoint 路径 (必须)")
     parser.add_argument("--data_file", type=str, default="./data/erqa/erqa_test.jsonl")
     parser.add_argument("--data_root", type=str, default="./data/erqa")
     parser.add_argument("--output_dir", type=str, default="./outputs/efficiency_analysis")
@@ -624,9 +624,9 @@ def main():
     print(f"[Efficiency] 基座模型已加载: {sum(p.numel() for p in base_model.parameters())/1e9:.2f}B params")
 
     # ============================================================
-    # 配置 B & C: LatentDraft (checkpoint)
+    # 配置 B & C: Interlude (checkpoint)
     # ============================================================
-    print("\n[Efficiency] === 加载配置 B/C: LatentDraft (checkpoint) ===")
+    print("\n[Efficiency] === 加载配置 B/C: Interlude (checkpoint) ===")
     nld_model = NLDModel(model_path=args.model_path, torch_dtype=dtype, attn_implementation="flash_attention_2")
     nld_processor = AutoProcessor.from_pretrained(args.model_path)
 
@@ -642,7 +642,7 @@ def main():
     nld_model.set_processor(nld_processor)
     nld_model.load_pretrained(args.checkpoint)
     nld_model = nld_model.to(device).eval()
-    print(f"[Efficiency] LatentDraft 已加载: checkpoint={args.checkpoint}")
+    print(f"[Efficiency] Interlude 已加载: checkpoint={args.checkpoint}")
     print(f"[Efficiency]  vocab: {_V_old} -> {nld_model.base_model.get_input_embeddings().weight.shape[0]}")
     print(f"[Efficiency]  latent_token_id = {nld_model.latent_token_id}")
 
@@ -694,7 +694,7 @@ def main():
             content.append({"type": "image", "image": f"file://{img_path}"})
         content.append({"type": "text", "text": question})
 
-        # 系统提示: Base 模型使用与 LatentDraft 一致的结构，要求详细自然语言推理
+        # 系统提示: Base 模型使用与 Interlude 一致的结构，要求详细自然语言推理
         BASE_SYSTEM_PROMPT = """You are a visual reasoning assistant. Analyze images carefully and think deeply.
 
 Rules:
@@ -721,7 +721,7 @@ Each player sees the board tilted away from them with their own pieces in the fo
             {"role": "system", "content": BASE_SYSTEM_PROMPT},
             {"role": "user", "content": content},
         ]
-        # LatentDraft 使用训练时的 NLD_SYSTEM_PROMPT
+        # Interlude 使用训练时的 NLD_SYSTEM_PROMPT
         nld_messages = [
             {"role": "system", "content": NLD_SYSTEM_PROMPT},
             {"role": "user", "content": content},
@@ -754,7 +754,7 @@ Each player sees the board tilted away from them with their own pieces in the fo
                 max_new_tokens=args.max_new_tokens, device=device,
                 disable_latent=False,
             )
-            print(f"      LatentDraft (Ours): steps={result_with_latent['num_decode_steps']}, "
+            print(f"      Interlude (Ours): steps={result_with_latent['num_decode_steps']}, "
                   f"latent×{result_with_latent['num_latent_triggers']}, "
                   f"thoughts={result_with_latent['num_thought_steps']}, "
                   f"latency={result_with_latent['total_latency_s']:.3f}s, "
@@ -837,7 +837,7 @@ Each player sees the board tilted away from them with their own pieces in the fo
         print(f"    Latency: {summary['base_latency_mean']:.3f}s ± {summary['base_latency_std']:.3f}s")
         print(f"    Decode steps: {summary['base_decode_steps_mean']:.1f}")
 
-    print(f"\n  [LatentDraft (Ours)]")
+    print(f"\n  [Interlude (Ours)]")
     if summary["with_latent_flops_mean"]:
         print(f"    FLOPs:   {summary['with_latent_flops_mean']:.3e}  ± {summary['with_latent_flops_std']:.3e}")
         print(f"    Latency: {summary['with_latent_latency_mean']:.3f}s ± {summary['with_latent_latency_std']:.3f}s")
@@ -851,11 +851,11 @@ Each player sees the board tilted away from them with their own pieces in the fo
 
     # 对比
     if summary["base_flops_mean"] and summary["with_latent_flops_mean"]:
-        print(f"\n  [对比: LatentDraft (Ours) vs Qwen3-VL-8B-Instruct]")
+        print(f"\n  [对比: Interlude (Ours) vs Qwen3-VL-8B-Instruct]")
         print(f"    FLOPs  增加: {(summary['with_latent_flops_mean']/summary['base_flops_mean']-1)*100:.1f}%")
         print(f"    Latency 增加: {(summary['with_latent_latency_mean']/summary['base_latency_mean']-1)*100:.1f}%")
     if summary["thinking_flops_mean"] and summary["with_latent_flops_mean"]:
-        print(f"\n  [对比: LatentDraft (Ours) vs Qwen3-VL-8B-Thinking]")
+        print(f"\n  [对比: Interlude (Ours) vs Qwen3-VL-8B-Thinking]")
         print(f"    FLOPs  增加: {(summary['with_latent_flops_mean']/summary['thinking_flops_mean']-1)*100:.1f}%")
         print(f"    Latency 增加: {(summary['with_latent_latency_mean']/summary['thinking_latency_mean']-1)*100:.1f}%")
     if summary["base_flops_mean"] and summary["thinking_flops_mean"]:
@@ -890,15 +890,15 @@ Each player sees the board tilted away from them with their own pieces in the fo
         f.write("[Qwen3-VL-8B-Thinking]\n")
         f.write(f"  FLOPs:   {summary['thinking_flops_mean']:.3e} ± {summary['thinking_flops_std']:.3e}\n")
         f.write(f"  Latency: {summary['thinking_latency_mean']:.3f}s ± {summary['thinking_latency_std']:.3f}s\n\n")
-        f.write("[LatentDraft (Ours)]\n")
+        f.write("[Interlude (Ours)]\n")
         f.write(f"  FLOPs:   {summary['with_latent_flops_mean']:.3e} ± {summary['with_latent_flops_std']:.3e}\n")
         f.write(f"  Latency: {summary['with_latent_latency_mean']:.3f}s ± {summary['with_latent_latency_std']:.3f}s\n\n")
         if summary["base_flops_mean"] and summary["with_latent_flops_mean"]:
-            f.write("[LatentDraft (Ours) vs Qwen3-VL-8B-Instruct]\n")
+            f.write("[Interlude (Ours) vs Qwen3-VL-8B-Instruct]\n")
             f.write(f"  FLOPs  +{(summary['with_latent_flops_mean']/summary['base_flops_mean']-1)*100:.1f}%\n")
             f.write(f"  Latency +{(summary['with_latent_latency_mean']/summary['base_latency_mean']-1)*100:.1f}%\n\n")
         if summary["thinking_flops_mean"] and summary["with_latent_flops_mean"]:
-            f.write("[LatentDraft (Ours) vs Qwen3-VL-8B-Thinking]\n")
+            f.write("[Interlude (Ours) vs Qwen3-VL-8B-Thinking]\n")
             f.write(f"  FLOPs  +{(summary['with_latent_flops_mean']/summary['thinking_flops_mean']-1)*100:.1f}%\n")
             f.write(f"  Latency +{(summary['with_latent_latency_mean']/summary['thinking_latency_mean']-1)*100:.1f}%\n\n")
         if summary["base_flops_mean"] and summary["thinking_flops_mean"]:

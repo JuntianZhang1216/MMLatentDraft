@@ -1,5 +1,5 @@
 """
-NLD Trainer: 自定义 Trainer 支持 Native Latent Draft 训练
+NLD Trainer: 自定义 Trainer 支持 Interlude 训练
 
 核心特性:
 1. 差异化学习率: NativeLatentThinker lr vs VLM 基座 lr

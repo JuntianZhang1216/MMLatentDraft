@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-NLD 训练脚本 (Native Latent Draft)
+NLD 训练脚本 (Interlude)
 
 使用方法:
     # 单卡
-    python scripts/train_nld.py --config configs/nld_train_phase1.yaml
+    python scripts/train_nld.py --config configs/local_train.yaml
     
     # 多卡 (FSDP, 推荐)
-    torchrun --nproc_per_node=8 scripts/train_nld.py --config configs/nld_train_phase1.yaml
+    torchrun --nproc_per_node=8 scripts/train_nld.py --config configs/local_train.yaml
 """
 
 import os
@@ -503,7 +503,7 @@ def main():
     # ====== 7. 训练 ======
     if is_main:
         print("\n" + "=" * 80)
-        print("🚀 开始 NLD 训练 (Native Latent Draft)...")
+        print("🚀 开始 NLD 训练 (Interlude)...")
         print("=" * 80 + "\n")
 
     resume_from = args.resume_from_checkpoint or training_config.get('resume_from_checkpoint')

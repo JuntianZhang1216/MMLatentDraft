@@ -1,5 +1,5 @@
 """
-NLD (Native Latent Draft) —— 基于 VLM 原生隐空间的自适应多步推理解码
+Interlude —— 基于 VLM 原生隐空间的自适应多步推理解码
 
 核心模块:
 - model_v2: NLD 模型 (VLM 原生隐空间思考 + 全量微调)

@@ -2,14 +2,14 @@
 # ============================================================
 # NLD Phase 1 训练启动脚本
 # 
-# Native Latent Draft: 基于 VLM 原生隐空间的自适应多步推理解码
+# Interlude: 基于 VLM 原生隐空间的自适应多步推理解码
 #   - FSDP full_shard + auto_wrap (替代 DeepSpeed)
 #   - 全量微调 VLM 8.3B + NativeLatentThinker ~2M
 #   - 差异化学习率: thinker 1e-4, VLM 2e-5
 #
 # 用法:
-#   bash scripts/run_train_nld.sh
-#   bash scripts/run_train_nld.sh --resume /path/to/checkpoint
+#   bash scripts/start_training_stage1.sh
+#   bash scripts/start_training_stage1.sh --resume /path/to/checkpoint
 # ============================================================
 
 set -e
@@ -52,7 +52,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "============================================================"
-echo "🚀 NLD Phase 1 训练 (Native Latent Draft)"
+echo "🚀 NLD Phase 1 训练 (Interlude)"
 echo "============================================================"
 echo "  配置文件:     ${CONFIG}"
 echo "  GPU 数量:     ${NUM_GPUS}"

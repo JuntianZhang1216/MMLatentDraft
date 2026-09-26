@@ -1052,7 +1052,7 @@ class NativeLatentThinker(nn.Module):
     ) -> torch.Tensor:
         """
         Stage-Windowed Supervision (语义侧监督), 借鉴 Laser (arxiv 2601.06803, Sec 3.3)
-        的 Dynamic Windowed Alignment Learning, 适配 LatentDraft 的 stage-organized
+        的 Dynamic Windowed Alignment Learning, 适配 Interlude 的 stage-organized
         key token 数据结构。
 
         统一前置流程 (两种 loss_form 共享):

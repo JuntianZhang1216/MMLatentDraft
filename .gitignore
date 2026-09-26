@@ -82,55 +82,20 @@ test_results_*.txt
 # 杂项
 =1.0.0
 
-# 含内部平台/docker 自激活、或依赖已被清理脚本的失效 launcher (不上传)
-start_dp_eval_one_bench.sh
-start_eval_all_benchmarks.sh
-start_download_new_benchmarks.sh
-scripts/run_eval_benchmark.sh
-modality_analysis/scripts/run_stage1.sh
-modality_analysis/scripts/run_stage1b.sh
-modality_analysis/scripts/run_stage1c.sh
-modality_analysis/scripts/run_stage1_ckpt1200.sh
-modality_analysis/scripts/run_extract_embeddings.sh
-modality_analysis/scripts/run_extract_embeddings_ckpt1200.sh
-modality_manifold_analysis/scripts/run_manifold_with_generation.sh
-modality_manifold_analysis/scripts/run_manifold_analysis_with_docker.sh
+# 未发布的旧启动脚本和分析流程
+/start_*.sh
+/scripts/run_eval_*.sh
+/modality_analysis/scripts/
+/modality_manifold_analysis/scripts/
 
-# 评测脚本 / 针对 ERQA / VSI-Bench 的训练脚本与配置 (不上传)
-eval_erqa.py
-start_eval_erqa.sh
-start_training_stage2_erqa_vsibench.sh
-configs/rld_stage2_erqa_vsibench_ckpt1200.yaml
-configs/rld_stage2_erqa_vsibench_ckpt49_balanced.yaml
-configs/rld_stage2_erqa_latent_cot_v2_ckpt49_balanced_v2.yaml
-scripts/merge_erqa_vsibench.py
+# 未发布的评测脚本和实验配置
+/eval_*.py
+/configs/rld_stage2_*.yaml
+/scripts/merge_*.py
 
-# 数据预处理 / 数据合成脚本 (不上传, 仅保留通用训练 / 推理 / 分析代码)
-# -- data preparation
-prepare_erqa.py
-prepare_vsibench.sh
-scripts/download_benchmarks.py
-scripts/prepare_benchmark.py
-scripts/prepare_vsibench.py
-# -- data synthesis
-scripts/generate_erqa_latent_cot.py
-scripts/generate_vsibench_latent_cot.py
-start_generate_erqa_latent.sh
-start_generate_vsibench_latent.sh
-scripts/v3/
-scripts/v5/action_space.py
-scripts/v5/generate_v5.py
-scripts/v5/prompts/generator_v5.txt
-scripts/v5/prompts/reader_v5.txt
-scripts/v5/schema_v5.py
-scripts/v6/build_multi_source_seeds.py
-scripts/v6/generate_v6.py
-scripts/v6/__init__.py
-scripts/v6/prompts/generator_v6.txt
-scripts/v6/prompts/visual_scanpath_v1.txt
-scripts/v6/regen_stage_tokens_visual_scanpath.py
-scripts/v6/schema_v6.py
-# entire data-synthesis pipeline directories
-scripts/v3/
-scripts/v5/
-scripts/v6/
+# 未发布的数据准备和合成流程
+/prepare_*
+/scripts/download_*.py
+/scripts/prepare_*.py
+/scripts/generate_*.py
+/scripts/v[0-9]*/

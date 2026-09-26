@@ -1,4 +1,4 @@
-"""NLD Model v2: Native Latent Draft — 基于 VLM 原生隐空间的双流推理解码
+"""NLD Model v2: Interlude — 基于 VLM 原生隐空间的双流推理解码
 
 核心思想 (COCONUT 式隐空间推理 + CoT 统一序列架构):
   主线: VLM 生成自然语言 CoT (可解释)
@@ -146,7 +146,7 @@ def _is_main_process():
 
 class NLDModel(nn.Module):
     """
-    NLD Model v2: Native Latent Draft
+    NLD Model v2: Interlude
     
     Qwen3-VL + NativeLatentThinker 双流推理解码
     
